@@ -1,0 +1,123 @@
+/**
+ * Pulls GSC stats for Today()-2 with strict Spreadsheet Timezone alignment.
+ */
+function updateGSCStats() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const timezone = ss.getSpreadsheetTimeZone(); 
+  const impressionsSheet = ss.getSheetByName('Impressions');
+  const clicksSheet = ss.getSheetByName('Clicks');
+  const positionSheet = ss.getSheetByName('Avg Position'); // Added new sheet
+  
+  // 1. Calculate Target Date (Today - 2 days)
+  const now = new Date();
+  const dateString = Utilities.formatDate(now, timezone, "yyyy-MM-dd");
+  const todayAtMidnight = new Date(dateString); 
+  
+  const targetDate = new Date(todayAtMidnight);
+  targetDate.setDate(todayAtMidnight.getDate() - 2);
+  
+  const apiDateString = Utilities.formatDate(targetDate, "UTC", "yyyy-MM-dd");
+
+  console.log("Looking for Date: " + targetDate.toDateString());
+
+  // Added positionSheet to the processing array
+  const sheets = [impressionsSheet, clicksSheet, positionSheet];
+  
+  sheets.forEach(sheet => {
+    if (!sheet) return;
+    
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const rawUrls = data.slice(1).map(row => row[0]); 
+    
+    // 2. Find the correct column index
+    let colIndex = -1;
+
+    for (let i = 0; i < headers.length; i++) {
+      let headerVal = headers[i];
+      let headerDate;
+
+      if (headerVal instanceof Date) {
+        headerDate = headerVal;
+      } else if (typeof headerVal === 'string' && headerVal.includes('/')) {
+        let parts = headerVal.split('/');
+        headerDate = new Date(parts[2], parts[1] - 1, parts[0]);
+      }
+
+      if (headerDate) {
+        const hString = Utilities.formatDate(headerDate, timezone, "yyyy-MM-dd");
+        const tString = Utilities.formatDate(targetDate, timezone, "yyyy-MM-dd");
+        
+        if (hString === tString) {
+          colIndex = i + 1;
+          break;
+        }
+      }
+    }
+
+    if (colIndex === -1) {
+      console.log("No match found for " + targetDate.toDateString() + " on " + sheet.getName());
+      return;
+    }
+
+    const outputValues = [];
+
+    // 3. Loop through URLs
+    rawUrls.forEach(rawUrl => {
+      if (!rawUrl) {
+        outputValues.push([""]);
+        return;
+      }
+
+      try {
+        const propertyId = extractPropertyId(rawUrl);
+        const apiUrl = `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(propertyId)}/searchAnalytics/query`;
+        
+        const payload = {
+          startDate: apiDateString,
+          endDate: apiDateString
+        };
+
+        const options = {
+          method: "post",
+          contentType: "application/json",
+          payload: JSON.stringify(payload),
+          headers: { Authorization: "Bearer " + ScriptApp.getOAuthToken() },
+          muteHttpExceptions: true
+        };
+
+        const response = UrlFetchApp.fetch(apiUrl, options);
+        const result = JSON.parse(response.getContentText());
+        
+        let value = 0;
+        if (result.rows && result.rows.length > 0) {
+          // Logic to determine which metric to extract
+          const sheetName = sheet.getName();
+          if (sheetName === 'Impressions') {
+            value = result.rows[0].impressions;
+          } else if (sheetName === 'Clicks') {
+            value = result.rows[0].clicks;
+          } else if (sheetName === 'Avg Position') {
+            value = result.rows[0].position; // Extracting position
+          }
+        }
+        outputValues.push([value]);
+        
+      } catch (e) {
+        outputValues.push(["Error"]);
+      }
+    });
+
+    if (outputValues.length > 0) {
+      sheet.getRange(2, colIndex, outputValues.length, 1).setValues(outputValues);
+    }
+  });
+}
+
+function extractPropertyId(url) {
+  if (url.indexOf('resource_id=') > -1) {
+    let id = url.split('resource_id=')[1].split('&')[0];
+    return decodeURIComponent(id);
+  }
+  return url;
+}
