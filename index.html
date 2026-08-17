@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="A live overview of Google Search Console property performance." />
+  <title>Searchlight — GSC Monitor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#" aria-label="Searchlight home">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span>Searchlight</span>
+      </a>
+
+      <nav class="nav" aria-label="Main navigation">
+        <button class="nav-item active"><span class="nav-icon grid-icon"></span>Overview</button>
+        <button class="nav-item" data-focus-search><span class="nav-icon properties-icon"></span>Properties <span class="nav-count" id="navCount">—</span></button>
+        <button class="nav-item" data-open-sheet><span class="nav-icon report-icon"></span>Source sheet <span class="external">↗</span></button>
+      </nav>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Data source</div>
+        <div class="source-card">
+          <span class="sheets-mark">▦</span>
+          <span><strong>Google Sheets</strong><small>Published workbook</small></span>
+          <span class="status-dot" title="Connected"></span>
+        </div>
+      </div>
+
+      <div class="sidebar-bottom">
+        <div class="sync-card">
+          <div class="sync-head"><span class="pulse"><i></i></span><strong>Daily sync</strong></div>
+          <p>Search Console reports with a two-day processing window.</p>
+          <div class="sync-next"><span>Latest data</span><strong id="sidebarLatest">Loading…</strong></div>
+        </div>
+        <button class="profile">
+          <span class="avatar">G</span><span><strong>GSC workspace</strong><small>All properties</small></span><span class="dots">•••</span>
+        </button>
+      </div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <button class="mobile-menu" aria-label="Open navigation">☰</button>
+        <label class="global-search">
+          <span>⌕</span><input id="globalSearch" type="search" placeholder="Search properties…" autocomplete="off" />
+          <kbd>/</kbd>
+        </label>
+        <div class="top-actions">
+          <div class="live-badge"><span></span>Live sheet</div>
+          <button class="icon-button" id="refreshButton" aria-label="Refresh data" title="Refresh data">↻</button>
+          <button class="icon-button" aria-label="Notifications">♢<i></i></button>
+        </div>
+      </header>
+
+      <div class="content">
+        <section class="hero">
+          <div>
+            <div class="eyebrow"><span></span>SEARCH PERFORMANCE</div>
+            <h1>Good morning. Here’s your search pulse.</h1>
+            <p id="heroSubtitle">Loading performance across your web properties…</p>
+          </div>
+          <div class="hero-controls">
+            <label class="date-select"><span>◷</span><select id="rangeSelect"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option><option value="all">All time</option></select></label>
+            <button class="export-button" id="exportButton"><span>⇩</span> Export CSV</button>
+          </div>
+        </section>
+
+        <section class="kpi-grid" aria-label="Summary metrics">
+          <article class="kpi-card impressions">
+            <div class="kpi-top"><span class="kpi-icon">◉</span><span class="metric-name">Impressions</span><span class="trend-pill" id="impTrend">—</span></div>
+            <div class="metric-value" id="impValue">—</div>
+            <div class="metric-foot"><span id="impCompare">vs previous period</span><svg class="sparkline" id="impSpark" viewBox="0 0 110 30"></svg></div>
+          </article>
+          <article class="kpi-card clicks">
+            <div class="kpi-top"><span class="kpi-icon">↖</span><span class="metric-name">Clicks</span><span class="trend-pill" id="clickTrend">—</span></div>
+            <div class="metric-value" id="clickValue">—</div>
+            <div class="metric-foot"><span id="clickCompare">vs previous period</span><svg class="sparkline" id="clickSpark" viewBox="0 0 110 30"></svg></div>
+          </article>
+          <article class="kpi-card position">
+            <div class="kpi-top"><span class="kpi-icon">⌁</span><span class="metric-name">Avg. position</span><span class="trend-pill" id="posTrend">—</span></div>
+            <div class="metric-value" id="posValue">—</div>
+            <div class="metric-foot"><span id="posCompare">lower is better</span><svg class="sparkline" id="posSpark" viewBox="0 0 110 30"></svg></div>
+          </article>
+          <article class="kpi-card ctr">
+            <div class="kpi-top"><span class="kpi-icon">%</span><span class="metric-name">Average CTR</span><span class="trend-pill" id="ctrTrend">—</span></div>
+            <div class="metric-value" id="ctrValue">—</div>
+            <div class="metric-foot"><span id="ctrCompare">clicks ÷ impressions</span><svg class="sparkline" id="ctrSpark" viewBox="0 0 110 30"></svg></div>
+          </article>
+        </section>
+
+        <section class="chart-card">
+          <div class="card-head">
+            <div><h2>Performance over time</h2><p>Combined total across filtered properties</p></div>
+            <div class="metric-tabs" role="tablist"><button class="active" data-metric="impressions">Impressions</button><button data-metric="clicks">Clicks</button><button data-metric="position">Position</button><button data-metric="ctr">CTR</button></div>
+          </div>
+          <div class="chart-wrap"><div id="chartTooltip" class="chart-tooltip" hidden></div><svg id="mainChart" viewBox="0 0 1100 270" preserveAspectRatio="none" aria-label="Performance chart"></svg></div>
+          <div class="chart-legend"><span><i class="legend-line current"></i>Current period</span><span><i class="legend-line previous"></i>Previous period</span><span class="updated" id="updatedText">Syncing data…</span></div>
+        </section>
+
+        <section class="properties-card">
+          <div class="card-head table-head">
+            <div><h2>Properties</h2><p>Latest performance and movement at a glance</p></div>
+            <div class="table-actions"><label class="table-search"><span>⌕</span><input id="tableSearch" type="search" placeholder="Filter properties" /></label><button id="viewAllButton">View all <span>→</span></button></div>
+          </div>
+          <div class="table-scroll">
+            <table><thead><tr><th>Property <button class="sort-button" data-sort="name">↕</button></th><th>Impressions <button class="sort-button" data-sort="impressions">↕</button></th><th>Clicks <button class="sort-button" data-sort="clicks">↕</button></th><th>CTR <button class="sort-button" data-sort="ctr">↕</button></th><th>Avg. position <button class="sort-button" data-sort="position">↕</button></th><th>30-day trend</th><th></th></tr></thead><tbody id="propertyRows"><tr><td colspan="7" class="loading-row">Loading live property data…</td></tr></tbody></table>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="app.js"></script>
+</body>
+</html>
