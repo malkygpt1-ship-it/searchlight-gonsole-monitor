@@ -97,8 +97,11 @@
 
         <section class="chart-card">
           <div class="card-head">
-            <div><h2>Performance over time</h2><p>Combined total across filtered properties</p></div>
-            <div class="metric-tabs" role="tablist"><button class="active" data-metric="impressions">Impressions</button><button data-metric="clicks">Clicks</button><button data-metric="position">Position</button><button data-metric="ctr">CTR</button></div>
+            <div><h2>Performance over time</h2><p id="chartSubtitle">All properties combined</p></div>
+            <div class="hero-controls" style="flex-wrap:wrap;justify-content:flex-end">
+              <label class="date-select"><span>⌄</span><select id="chartPropertySelect" aria-label="Select property for performance chart" style="max-width:240px"><option value="all">All properties</option></select></label>
+              <div class="metric-tabs" role="tablist"><button class="active" data-metric="impressions">Impressions</button><button data-metric="clicks">Clicks</button><button data-metric="position">Position</button><button data-metric="ctr">CTR</button></div>
+            </div>
           </div>
           <div class="chart-wrap"><div id="chartTooltip" class="chart-tooltip" hidden></div><svg id="mainChart" viewBox="0 0 1100 270" preserveAspectRatio="none" aria-label="Performance chart"></svg></div>
           <div class="chart-legend"><span><i class="legend-line current"></i>Current period</span><span><i class="legend-line previous"></i>Previous period</span><span class="updated" id="updatedText">Syncing data…</span></div>
