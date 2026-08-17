@@ -20,6 +20,20 @@
 
   const headers = [...document.querySelectorAll('.properties-card thead th')];
 
+  // app.js stores the calculated impressions total as `imp`, while the UI sort
+  // key is named `impressions`. Translate that key only while the table rows are
+  // being sorted, then restore it so the header state/indicators stay intuitive.
+  const baseRenderTable = renderTable;
+  renderTable = function renderTableWithSortKey(props, idx) {
+    const uiSort = state.sort;
+    if (uiSort === 'impressions') state.sort = 'imp';
+    try {
+      return baseRenderTable(props, idx);
+    } finally {
+      state.sort = uiSort;
+    }
+  };
+
   function applySort(sort) {
     if (state.sort === sort) {
       state.direction *= -1;
@@ -57,8 +71,7 @@
       th.append(' ', button);
     }
 
-    // app.js already handles clicks on its original sort buttons. Prevent those
-    // clicks bubbling into the header and causing a second sort reversal.
+    // The button is visual only (pointer-events:none); the whole header handles sorting.
     button.addEventListener('click', event => event.stopPropagation());
 
     th.classList.add('sortable-header');
